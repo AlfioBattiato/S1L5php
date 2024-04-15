@@ -18,21 +18,20 @@ $search = $_GET['search'] ?? '';
 $limit = 100;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $offset = ($page - 1) * $limit; // pagina 0
-// $stmt = $pdo->query('SELECT * FROM pizza');
 $stmt = $pdo->prepare("SELECT * FROM books WHERE titolo LIKE :search LIMIT :limit OFFSET :offset");
 $stmt->execute([
     'search' => "%$search%",
     'offset' => $offset,
     'limit' => $limit,
-
-
 ]);
 $array = $stmt->fetchAll();
 $stmt = $pdo->query("SELECT count(*) AS numeroElementi FROM books   ");
 $numeroElementi = $stmt->fetch()["numeroElementi"];
 
 // validazione dei campi
-$show="show";
+
+$errors = [];
+$errors2 = [];
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di tipo POST
     $titolo = $_POST['Titolo'];
@@ -42,13 +41,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
     $immagine = $_POST['Immagine'];
     $formid = $_POST['formid'];
     $myid = $_POST["id"];
-    $errors = [];
 
     if ($formid === 'inserisci') {
-        if (strlen($titolo) < 2) {
-            $errors['titolo'] = 'Il titolo deve contenere almeno 2 caratteri';
+        if (strlen($titolo) < 2 || strlen($titolo) > 60) {
+            $errors['titolo'] = 'Il titolo deve contenere un valore tra 2 e 60 caratteri';
         }
-        if ($errors == []) {
+        if (strlen($genere) < 2 || strlen($genere) > 50) {
+            $errors['genere'] = 'Il genere deve contenere un valore tra 2 e 50 caratteri';
+        }
+        if (strlen($immagine) < 10 || !filter_var($immagine, FILTER_VALIDATE_URL)) {
+            $errors['immagine'] = 'L\'URL dell\'immagine non è valido';
+        }
+        if (empty($errors)) {
             $stmt = $pdo->prepare("INSERT INTO books (titolo, autore, anno_pubblicazione,genere,img) VALUES (:titolo, :autore, :anno_pubblicazione,:genere, :img)");
             $stmt->execute([
                 'titolo' => $titolo,
@@ -60,17 +64,27 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
             header('Location: index.php');
         }
     } elseif ($formid === 'modifica') {
-        $stmt = $pdo->prepare("UPDATE books SET titolo = :titolo, autore = :autore, anno_pubblicazione = :anno_pubblicazione,genere = :genere, img = :immagine WHERE id = :id");
-        $stmt->execute([
-            'id' => $myid,
-            'titolo' => $titolo,
-            'autore' => $autore,
-            'anno_pubblicazione' => $annoPubblicazione,
-            'genere' => $genere,
-            'immagine' => $immagine
-        ]);
-        header('Location: index.php');
-
+        if (strlen($titolo) < 2 || strlen($titolo) > 60) {
+            $errors2['titolo'] = 'Il titolo deve contenere un valore tra 2 e 60 caratteri';
+        }
+        if (strlen($genere) < 2 || strlen($genere) > 50) {
+            $errors2['genere'] = 'Il genere deve contenere un valore tra 2 e 50 caratteri';
+        }
+        if (strlen($immagine) < 10 || !filter_var($immagine, FILTER_VALIDATE_URL)) {
+            $errors2['immagine'] = 'L\'URL dell\'immagine non è valido';
+        }
+        if (empty($errors2)) {
+            $stmt = $pdo->prepare("UPDATE books SET titolo = :titolo, autore = :autore, anno_pubblicazione = :anno_pubblicazione,genere = :genere, img = :immagine WHERE id = :id");
+            $stmt->execute([
+                'id' => $myid,
+                'titolo' => $titolo,
+                'autore' => $autore,
+                'anno_pubblicazione' => $annoPubblicazione,
+                'genere' => $genere,
+                'immagine' => $immagine
+            ]);
+            header('Location: index.php');
+        }
     }
 }
 ?>
@@ -82,12 +96,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap demo</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Includi il file CSS delle icone Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 
 <body>
@@ -96,13 +112,15 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
         <div class="container">
             <span class="navbar-brand mb-0 text-white ">Feltrinelli</span>
             <div class='d-flex gap-2'>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal"
+                    data-bs-target="#exampleModal">
                     Aggiungi Libro
                 </button>
 
                 <!-- Modal -->
                 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
                     aria-hidden="true">
+
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -118,28 +136,38 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                     <input type="hidden" name="id" value="">
                                     <div class="mb-3">
                                         <label for="Titolo" class="form-label">Titolo</label>
-                                        <input type="text" name="Titolo" class="form-control" id="Titolo">
-                                        <?php echo isset($titolo["titolo"]) ? "<div class='text-danger'>$errors[titolo]</div>" : "" ?>
+                                        <input type="text" value="<?php echo isset($titolo) ? $titolo : '' ?>"
+                                            name="Titolo" class="form-control" id="Titolo">
+                                        <?php echo isset($errors["titolo"]) ? "<div class='text-danger'>$errors[titolo]</div>" : "" ?>
 
                                     </div>
                                     <div class="mb-3">
                                         <label for="Autore" class="form-label">Autore</label>
-                                        <input type="text" name="Autore" class="form-control" id="Autore">
+                                        <input type="text" value="<?php echo isset($autore) ? $autore : '' ?>"
+                                            name="Autore" class="form-control" id="Autore">
                                     </div>
                                     <div class="mb-3">
                                         <label for="AnnoPubblicazione" class="form-label">Anno Pubblicazione</label>
-                                        <input type="date" name="AnnoPubblicazione" class="form-control"
-                                            id="AnnoPubblicazione">
+                                        <input type="date"
+                                            value="<?php echo isset($annoPubblicazione) ? $annoPubblicazione : '' ?>"
+                                            name="AnnoPubblicazione" class="form-control" id="AnnoPubblicazione">
                                     </div>
                                     <div class="mb-3">
                                         <label for="Genere" class="form-label">Genere</label>
-                                        <input type="text" name="Genere" class="form-control" id="Genere">
+                                        <input type="text" value="<?php echo isset($genere) ? $genere : '' ?>"
+                                            name="Genere" class="form-control" id="Genere">
+                                        <?php echo isset($errors["genere"]) ? "<div class='text-danger'>$errors[genere]</div>" : "" ?>
+
                                     </div>
                                     <div class="mb-3">
                                         <label for="Immagine" class="form-label">Immagine</label>
-                                        <input type="text" name="Immagine" class="form-control" id="Immagine">
+                                        <input type="text" value="<?php echo isset($immagine) ? $immagine : '' ?>"
+                                            name="Immagine" class="form-control" id="Immagine">
+                                        <?php echo isset($errors["immagine"]) ? "<div class='text-danger'>$errors[immagine]</div>" : "" ?>
+
                                     </div>
-                                    <button type="submit" class="btn btn-primary">Inserisci</button>
+                                    <button type="submit" class="btn btn-primary" id="submitButton">Inserisci</button>
+                                    <div id="errorDiv" class="text-danger mt-2"></div>
                                 </form>
                             </div>
                             <div class="modal-footer">
@@ -184,12 +212,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                 <h6>Genere: <span class="badge text-bg-primary"><?= $row['genere'] ?></span></h6>
 
                                 <a href="" class="btn btn-success" data-bs-toggle="modal"
-                                    data-bs-target="#exampleModal<?= $key ?>">Modifica</a>
+                                    data-bs-target="#exampleModal2<?= $key ?>">Modifica</a>
                                 <a href="http://localhost/S1L5php/delete.php?id=<?= $row['id'] ?>"
                                     class="btn btn-danger red">Elimina</a>
                             </div>
                         </div>
-                        <div class="modal fade" id="exampleModal<?= $key ?>" tabindex="-1"
+                        <div class="modal fade" id="exampleModal2<?= $key ?>" tabindex="-1"
                             aria-labelledby="exampleModalLabel<?= $key ?>" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -203,33 +231,36 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                         <form method="post" action="">
                                             <input type="hidden" name="formid" value="modifica">
                                             <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                            <?php echo isset($errors2["titolo"]) ? "<div class='text-danger'>$errors2[titolo]</div>" : "" ?>
+
 
                                             <div class="mb-3">
                                                 <label for="Titolo" class="form-label">Titolo</label>
-                                                <input value=<?= $row['titolo'] ?> type="text" name="Titolo"
+                                                <input value="<?= $row['titolo'] ?>" type="text" name="Titolo"
                                                     class="form-control" id="Titolo">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="Autore" class="form-label">Autore</label>
-                                                <input value=<?= $row['autore'] ?> type="text" name="Autore"
+                                                <input value="<?= $row['autore'] ?>" type="text" name="Autore"
                                                     class="form-control" id="Autore">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="AnnoPubblicazione" class="form-label">Anno Pubblicazione</label>
-                                                <input value=<?= $row['anno_pubblicazione'] ?> type="date"
+                                                <input value="<?= $row['anno_pubblicazione'] ?>" type="date"
                                                     name="AnnoPubblicazione" class="form-control" id="AnnoPubblicazione">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="genere" class="form-label">Genere</label>
-                                                <input value=<?= $row['genere'] ?> type="text" name="Genere"
+                                                <input value="<?= $row['genere'] ?>" type="text" name="Genere"
                                                     class="form-control" id="genere">
                                             </div>
                                             <div class="mb-3">
                                                 <label for="Immagine" class="form-label">Immagine</label>
-                                                <input value=<?= $row['img'] ?> type="text" name="Immagine"
+                                                <input value="<?= $row['img'] ?>" type="text" name="Immagine"
                                                     class="form-control" id="Immagine">
                                             </div>
-                                            <button type="submit" class="btn btn-primary">Modifica</button>
+                                            <button type="submit" class="btn btn-primary"
+                                                id="submitButton">Modifica</button>
                                         </form>
                                     </div>
                                 </div>
@@ -247,9 +278,21 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+    <!-- Script per gestire l'apertura del modale -->
     <script>
-        console.log(<?php echo json_encode($array); ?>);
+        <?php if (!empty($errors)): ?>
+            $(document).ready(function () {
+                $('#exampleModal').modal('show');
+            });
+        <?php endif; ?>
+        // <?php if (!empty($errors2)): ?>
+        //     $(document).ready(function () {
+        //         $('#exampleModal2').modal('show');
+        //     });
+        <?php endif; ?>
     </script>
+
+
 </body>
 
 </html>
