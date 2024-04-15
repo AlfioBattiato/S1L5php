@@ -3,9 +3,7 @@ $host = 'localhost';
 $db = 'books';
 $user = 'root';
 $pass = '';
-
 $array = [];
-
 $dsn = "mysql:host=$host;dbname=$db";
 
 $options = [
@@ -16,12 +14,10 @@ $options = [
 
 // comando che connette al database
 $pdo = new PDO($dsn, $user, $pass, $options);
-
 $search = $_GET['search'] ?? '';
-$limit = 10;
+$limit = 100;
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 $offset = ($page - 1) * $limit; // pagina 0
-
 // $stmt = $pdo->query('SELECT * FROM pizza');
 $stmt = $pdo->prepare("SELECT * FROM books WHERE titolo LIKE :search LIMIT :limit OFFSET :offset");
 $stmt->execute([
@@ -31,42 +27,52 @@ $stmt->execute([
 
 
 ]);
-
-
 $array = $stmt->fetchAll();
-
 $stmt = $pdo->query("SELECT count(*) AS numeroElementi FROM books   ");
-
 $numeroElementi = $stmt->fetch()["numeroElementi"];
+
 // validazione dei campi
+// $show="show";
+
 if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di tipo POST
     $titolo = $_POST['Titolo'];
     $autore = $_POST['Autore'];
     $annoPubblicazione = $_POST['AnnoPubblicazione'];
     $genere = $_POST['Genere'];
     $immagine = $_POST['Immagine'];
+    $formid = $_POST['formid'];
+    $myid = $_POST["id"];
     $errors = [];
-    //il filter var è un metodo di validazione nativo di php
 
-    if (strlen($titolo) < 8) {
-        $errors['titolo'] = 'La password deve contenere almeno 8 caratteri';
-    }
-    if ($errors == []) {
-        
-        $stmt = $pdo->prepare("INSERT INTO books (titolo, autore, anno_pubblicazione,genere,img) VALUES (:titolo, :autore, :anno_pubblicazione,:genere, :img)");
+    if ($formid === 'inserisci') {
+        if (strlen($titolo) < 2) {
+            $errors['titolo'] = 'Il titolo deve contenere almeno 2 caratteri';
+        }
+        if ($errors == []) {
+            $stmt = $pdo->prepare("INSERT INTO books (titolo, autore, anno_pubblicazione,genere,img) VALUES (:titolo, :autore, :anno_pubblicazione,:genere, :img)");
+            $stmt->execute([
+                'titolo' => $titolo,
+                'autore' => $autore,
+                'anno_pubblicazione' => $annoPubblicazione,
+                'genere' => $genere,
+                'img' => $immagine
+            ]);
+            header('Location: index.php');
+        }
+    } elseif ($formid === 'modifica') {
+        $stmt = $pdo->prepare("UPDATE books SET titolo = :titolo, autore = :autore, anno_pubblicazione = :anno_pubblicazione,genere = :genere, img = :immagine WHERE id = :id");
         $stmt->execute([
+            'id' => $myid,
             'titolo' => $titolo,
             'autore' => $autore,
             'anno_pubblicazione' => $annoPubblicazione,
             'genere' => $genere,
-            'img' => $immagine
+            'immagine' => $immagine
         ]);
         header('Location: index.php');
 
     }
-    echo '<pre>' . print_r($errors, true) . '</pre>';
 }
-
 ?>
 
 <!doctype html>
@@ -95,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                 </button>
 
                 <!-- Modal -->
-                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                <div class="modal fade " id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
                     aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -106,7 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                             </div>
                             <!-- form aggiungi libro -->
                             <div class="modal-body">
-                                <form method="post" action="http://localhost/S1L5php/form.php">
+
+                                <form method="post" action="">
+                                    <input type="hidden" name="formid" value="inserisci">
+                                    <input type="hidden" name="id" value="">
                                     <div class="mb-3">
                                         <label for="Titolo" class="form-label">Titolo</label>
                                         <input type="text" name="Titolo" class="form-control" id="Titolo">
@@ -163,7 +172,6 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
             <div class="row gy-3">
 
                 <!-- main -->
-
                 <?php foreach ($array as $key => $row): ?>
                     <div class="col col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
                         <div class="card" style="width: 100%;">
@@ -178,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                 <a href="" class="btn btn-success" data-bs-toggle="modal"
                                     data-bs-target="#exampleModal<?= $key ?>">Modifica</a>
                                 <a href="http://localhost/S1L5php/delete.php?id=<?= $row['id'] ?>"
-                                    class="btn btn-danger">Elimina</a>
+                                    class="btn btn-danger red">Elimina</a>
                             </div>
                         </div>
                         <div class="modal fade" id="exampleModal<?= $key ?>" tabindex="-1"
@@ -192,8 +200,10 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                     </div>
                                     <div class="modal-body">
                                         <!-- form modifica -->
-                                        <form method="post"
-                                            action="http://localhost/S1L5php/modifica.php?id=<?= $row['id'] ?>">
+                                        <form method="post" action="">
+                                            <input type="hidden" name="formid" value="modifica">
+                                            <input type="hidden" name="id" value="<?= $row['id'] ?>">
+
                                             <div class="mb-3">
                                                 <label for="Titolo" class="form-label">Titolo</label>
                                                 <input value=<?= $row['titolo'] ?> type="text" name="Titolo"
@@ -243,45 +253,3 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
 </body>
 
 </html>
-
-<!-- colonna lista left
-   <div class="col col-12 col-md-8">
-                <h1>My booksList</h1>
-                <div class="row border mb-3">
-                    <div class="col col-12 col-md-3">
-                        <p class="text-center fw-bold">Titolo</p>
-                    </div>
-                    <div class="col col-12 col-md-3">
-                        <p class="text-center fw-bold">Autore</p>
-                    </div>
-                    <div class="col col-12 col-md-2">
-                        <p class="text-center fw-bold">Anno pubblicazione</p>
-                    </div>
-                    <div class="col col-12 col-md-3">
-                        <p class="text-center fw-bold">Genere</p>
-                    </div>
-                </div>
-
-                <?php foreach ($array as $key => $row): ?>
-                    <div class="row border">
-                        <div class="col col-12 col-md-3">
-                            <p class="text-center fw-semibold"><?php echo $row['titolo'] ?></p>
-                        </div>
-
-                        <div class="col col-12 col-md-3">
-                            <p class="text-center fw-semibold"><?= $row['autore'] ?></p>
-                        </div>
-
-                        <div class="col col-12 col-md-3">
-                            <p class="text-center fw-semibold"><?= $row['anno_pubblicazione'] ?></p>
-                        </div>
-
-                        <div class="col col-12 col-md-3">
-                            <p class="text-center fw-semibold"><?= $row['genere'] ?></p>
-                        </div>
-                     
-
-                    </div>
-                <?php endforeach; ?>
-
-            </div> -->
