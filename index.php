@@ -32,7 +32,7 @@ $stmt = $pdo->query("SELECT count(*) AS numeroElementi FROM books   ");
 $numeroElementi = $stmt->fetch()["numeroElementi"];
 
 // validazione dei campi
-// $show="show";
+$show="show";
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di tipo POST
     $titolo = $_POST['Titolo'];
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                 </button>
 
                 <!-- Modal -->
-                <div class="modal fade " id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
                     aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
