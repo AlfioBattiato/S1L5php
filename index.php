@@ -102,20 +102,22 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Includi il file CSS delle icone Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="index.css">
 </head>
 
 <body>
     <!-- navbar -->
     <nav class="navbar bg-body-tertiary red myn">
         <div class="container">
-            <span class="navbar-brand mb-0 text-white ">Feltrinelli</span>
+            <a href="http://localhost/S1L5php/index.php " class="text-decoration-none" > <span
+                    class="navbar-brand mb-0 text-white ">Feltrinelli</span></a>
             <div class='d-flex gap-2'>
                 <button type="button" class="btn btn-outline-light" data-bs-toggle="modal"
                     data-bs-target="#exampleModal">
                     Aggiungi Libro
                 </button>
+                <a href="http://localhost/S1L5php/login.php" class="fw-bold text-primary">Accedi</a>
 
                 <!-- Modal -->
                 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
@@ -175,6 +177,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                             </div>
                         </div>
                     </div>
+
+
                 </div>
 
             </div>
@@ -190,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                     aria-label="Cerca">
                 <button class="btn btn-secondary" type="submit">Cerca</button>
             </form>
-            <i class="bi bi-person-check fs-1 ms-5"></i>
+            <a href=""> <i class="bi bi-person-check fs-1 ms-5"></i></a>
         </div>
         <img alt="img" style="max-with:100%" class="img-fluid" src="feltrinelli.png" />
     </div>
@@ -212,13 +216,14 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                                 <h6>Genere: <span class="badge text-bg-primary"><?= $row['genere'] ?></span></h6>
 
                                 <a href="" class="btn btn-success" data-bs-toggle="modal"
-                                    data-bs-target="#exampleModal2<?= $key ?>">Modifica</a>
+                                    data-bs-target="#exampleModal2<?= $key ?>" id="btn-modifica<?= $row["id"]?>">Modifica</a>
                                 <a href="http://localhost/S1L5php/delete.php?id=<?= $row['id'] ?>"
                                     class="btn btn-danger red">Elimina</a>
                             </div>
                         </div>
-                        <div class="modal fade" id="exampleModal2<?= $key ?>" tabindex="-1"
-                            aria-labelledby="exampleModalLabel<?= $key ?>" aria-hidden="true">
+                        <div class="modal fade "
+                             id="exampleModal2<?= $key ?>"
+                            tabindex="-1" aria-labelledby="exampleModalLabel<?= $key ?>" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -285,11 +290,13 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
                 $('#exampleModal').modal('show');
             });
         <?php endif; ?>
-        // <?php if (!empty($errors2)): ?>
-        //     $(document).ready(function () {
-        //         $('#exampleModal2').modal('show');
-        //     });
+      
+        <?php if (!empty($errors)): ?>
+            document.querySelector("#btn-modifica<?= $myid?>").click();
+
         <?php endif; ?>
+      
+
     </script>
 
 
