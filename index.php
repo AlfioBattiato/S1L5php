@@ -291,8 +291,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") { //controllo se la richiesta è di ti
             });
         <?php endif; ?>
       
-        <?php if (!empty($errors)): ?>
-            document.querySelector("#btn-modifica<?= $myid?>").click();
+        <?php if (!empty($errors2)): ?>
+            document.querySelector("#btn-modifica<?=$myid?>").click();
 
         <?php endif; ?>
       
